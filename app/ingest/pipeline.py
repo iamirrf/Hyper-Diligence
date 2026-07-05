@@ -72,16 +72,17 @@ def _insert_filing(
             (ticker, filing.form, filing.filed, filing.accession, filing.source_url, s3_key),
         ).fetchone()
         filing_id = row["id"] if isinstance(row, dict) else row[0]
-        conn.executemany(
-            """
-            INSERT INTO chunks (filing_id, section, chunk_index, content, token_count, embedding)
-            VALUES (%s, %s, %s, %s, %s, %s);
-            """,
-            [
-                (filing_id, chunk.section, chunk.chunk_index, chunk.content, chunk.token_count, vector)
-                for chunk, vector in zip(chunks, vectors, strict=True)
-            ],
-        )
+        with conn.cursor() as cursor:
+            cursor.executemany(
+                """
+                INSERT INTO chunks (filing_id, section, chunk_index, content, token_count, embedding)
+                VALUES (%s, %s, %s, %s, %s, %s);
+                """,
+                [
+                    (filing_id, chunk.section, chunk.chunk_index, chunk.content, chunk.token_count, vector)
+                    for chunk, vector in zip(chunks, vectors, strict=True)
+                ],
+            )
 
 
 def main() -> None:

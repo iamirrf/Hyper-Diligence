@@ -4,10 +4,10 @@ from dataclasses import dataclass
 
 import boto3
 from botocore.exceptions import ClientError
-from openai import OpenAI
 
-from app.config import get_settings, require_openai_api_key
+from app.config import get_settings
 from app.db import count_chunks
+from app.ingest.embed import embed_texts
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +19,10 @@ class CheckResult:
     detail: str
 
 
-def run_checks(skip_openai: bool = False, skip_s3: bool = False) -> list[CheckResult]:
+def run_checks(skip_embeddings: bool = False, skip_s3: bool = False) -> list[CheckResult]:
     results = [_check_database()]
-    if not skip_openai:
-        results.append(_check_openai())
+    if not skip_embeddings:
+        results.append(_check_embedding_provider())
     if not skip_s3:
         results.append(_check_s3())
     return results
@@ -36,16 +36,19 @@ def _check_database() -> CheckResult:
         return CheckResult("database", False, f"{type(exc).__name__}: {exc}")
 
 
-def _check_openai() -> CheckResult:
+def _check_embedding_provider() -> CheckResult:
     try:
-        client = OpenAI(api_key=require_openai_api_key())
-        response = client.embeddings.create(model="text-embedding-3-small", input=["preflight"])
-        dimensions = len(response.data[0].embedding)
-        if dimensions != 1536:
-            return CheckResult("openai", False, f"expected 1536 embedding dims, got {dimensions}")
-        return CheckResult("openai", True, "embedding request succeeded")
+        settings = get_settings()
+        vector = embed_texts(["preflight"])[0]
+        if len(vector) != settings.embedding_dimensions:
+            return CheckResult(
+                "embeddings",
+                False,
+                f"expected {settings.embedding_dimensions} dims, got {len(vector)}",
+            )
+        return CheckResult("embeddings", True, f"{settings.embedding_provider}:{settings.embedding_model}")
     except Exception as exc:
-        return CheckResult("openai", False, f"{type(exc).__name__}: {exc}")
+        return CheckResult("embeddings", False, f"{type(exc).__name__}: {exc}")
 
 
 def _check_s3() -> CheckResult:
@@ -68,12 +71,13 @@ def _check_s3() -> CheckResult:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--skip-openai", action="store_true")
+    parser.add_argument("--skip-embeddings", action="store_true")
+    parser.add_argument("--skip-openai", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--skip-s3", action="store_true")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 
-    results = run_checks(skip_openai=args.skip_openai, skip_s3=args.skip_s3)
+    results = run_checks(skip_embeddings=args.skip_embeddings or args.skip_openai, skip_s3=args.skip_s3)
     for result in results:
         status = "ok" if result.ok else "fail"
         print(f"{status:4} {result.name}: {result.detail}")

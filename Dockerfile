@@ -9,7 +9,7 @@ COPY requirements.txt .
 RUN python -m pip install --upgrade pip \
     && pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu \
     && pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu \
-    && python -c "from sentence_transformers import CrossEncoder; CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')"
+    && python -c "from sentence_transformers import CrossEncoder, SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2'); CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')"
 
 COPY app ./app
 

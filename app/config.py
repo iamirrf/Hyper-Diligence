@@ -8,6 +8,10 @@ class Settings(BaseSettings):
 
     openai_api_key: str = ""
     database_url: str = "postgresql://hyper_diligence:hyper_diligence@localhost:5432/hyper_diligence"
+    embedding_provider: str = "local"
+    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    embedding_dimensions: int = 384
+    chat_provider: str = "extractive"
     aws_access_key_id: str = ""
     aws_secret_access_key: str = ""
     aws_region: str = "us-east-1"

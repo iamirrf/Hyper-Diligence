@@ -47,6 +47,9 @@ def init_schema() -> None:
     """Schema creation is idempotent so deploys and local setup can share it."""
 
     settings = get_settings()
+    embedding_dimensions = int(settings.embedding_dimensions)
+    if embedding_dimensions <= 0:
+        raise ValueError("EMBEDDING_DIMENSIONS must be positive")
     logger.info("initializing_schema", extra={"database_url": _redact_url(settings.database_url)})
     with psycopg.connect(settings.database_url) as conn:
         conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
@@ -65,7 +68,7 @@ def init_schema() -> None:
             """
         )
         conn.execute(
-            """
+            f"""
             CREATE TABLE IF NOT EXISTS chunks (
                 id SERIAL PRIMARY KEY,
                 filing_id INT REFERENCES filings(id) ON DELETE CASCADE,
@@ -73,12 +76,24 @@ def init_schema() -> None:
                 chunk_index INT NOT NULL,
                 content TEXT NOT NULL,
                 token_count INT NOT NULL,
-                embedding vector(1536)
+                embedding vector({embedding_dimensions})
             );
             """
         )
         conn.commit()
     logger.info("schema_ready")
+
+
+def reset_schema() -> None:
+    """A reset path keeps vector dimension changes explicit and reversible."""
+
+    settings = get_settings()
+    logger.warning("resetting_schema", extra={"database_url": _redact_url(settings.database_url)})
+    with psycopg.connect(settings.database_url) as conn:
+        conn.execute("DROP TABLE IF EXISTS chunks;")
+        conn.execute("DROP TABLE IF EXISTS filings;")
+        conn.commit()
+    init_schema()
 
 
 def count_chunks() -> int:
@@ -98,8 +113,12 @@ def _redact_url(url: str) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--init", action="store_true", help="Initialize database schema")
+    parser.add_argument("--reset", action="store_true", help="Drop and recreate application tables")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+    if args.reset:
+        reset_schema()
+        return
     if args.init:
         init_schema()
         return

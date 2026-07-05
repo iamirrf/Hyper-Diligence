@@ -18,7 +18,7 @@ def dense_search(query: str, k: int = 20, ticker: str | None = None, form: str |
             filings.ticker,
             filings.form,
             filings.filed,
-            chunks.embedding <=> %s AS score
+            chunks.embedding <=> %s::vector AS score
         FROM chunks
         JOIN filings ON filings.id = chunks.filing_id
         WHERE chunks.embedding IS NOT NULL{where}
