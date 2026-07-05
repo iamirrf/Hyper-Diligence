@@ -32,10 +32,11 @@ Pending: add three verified `/ask` examples with citations after ingestion.
 1. Copy `.env.example` to `.env` and fill in `OPENAI_API_KEY`, `S3_BUCKET`, and AWS credentials.
 2. Start Postgres: `docker compose up -d db`.
 3. Initialize the schema: `python -m app.db --init`.
-4. Start the API: `uvicorn app.main:app --reload`.
-5. Ingest the target corpus: `python -m app.ingest.pipeline --tickers AAPL MSFT NVDA JPM TSLA`.
-6. Search: `curl "http://localhost:8000/search?q=Apple%20services%20segment%20growth"`.
-7. Ask: `curl -X POST http://localhost:8000/ask -H "Content-Type: application/json" -d '{"question":"What risks does Apple flag around supply chain concentration?"}'`.
+4. Check credentials: `python -m app.preflight`.
+5. Start the API: `uvicorn app.main:app --reload`.
+6. Ingest the target corpus: `python -m app.ingest.pipeline --tickers AAPL MSFT NVDA JPM TSLA`.
+7. Search: `curl "http://localhost:8000/search?q=Apple%20services%20segment%20growth"`.
+8. Ask: `curl -X POST http://localhost:8000/ask -H "Content-Type: application/json" -d '{"question":"What risks does Apple flag around supply chain concentration?"}'`.
 
 ## Live Demo
 

@@ -3,6 +3,7 @@ from datetime import date
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Query
+from openai import OpenAIError
 from pydantic import BaseModel, Field
 
 from app.config import MissingConfigurationError
@@ -76,6 +77,8 @@ def search_endpoint(
         results = search(q, mode=mode, k=k, ticker=ticker, form=form)
     except MissingConfigurationError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except OpenAIError as exc:
+        raise HTTPException(status_code=503, detail=f"OpenAI request failed: {type(exc).__name__}") from exc
     return [SearchResultResponse(**result.__dict__) for result in results]
 
 
@@ -87,6 +90,8 @@ def ask(request: AskRequest) -> AskResponse:
         result = run_agent(request.question)
     except MissingConfigurationError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except OpenAIError as exc:
+        raise HTTPException(status_code=503, detail=f"OpenAI request failed: {type(exc).__name__}") from exc
     logger.info("agent_tool_trace", extra={"tool_trace": result["tool_trace"]})
     return AskResponse(**result)
 
