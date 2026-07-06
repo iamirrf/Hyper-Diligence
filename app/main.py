@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import date
 from pathlib import Path
@@ -104,7 +105,7 @@ def ask(request: AskRequest) -> AskResponse:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except OpenAIError as exc:
         raise HTTPException(status_code=503, detail=f"OpenAI request failed: {type(exc).__name__}") from exc
-    logger.info("agent_tool_trace", extra={"tool_trace": result["tool_trace"]})
+    logger.info("agent_tool_trace %s", json.dumps(result["tool_trace"], default=str))
     return AskResponse(**result)
 
 

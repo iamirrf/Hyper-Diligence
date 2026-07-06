@@ -94,10 +94,15 @@ def run_extractive_agent(question: str) -> dict[str, Any]:
 
     args: dict[str, Any] = {"query": question, "k": 5}
     ticker = _infer_ticker(question)
+    tool_trace: list[dict[str, Any]] = []
+    if ticker:
+        filings_args = {"ticker": ticker}
+        execute_tool("list_filings", filings_args)
+        tool_trace.append({"tool": "list_filings", "args": filings_args})
     if ticker:
         args["ticker"] = ticker
     results = execute_tool("search_filings", args)
-    tool_trace = [{"tool": "search_filings", "args": args}]
+    tool_trace.append({"tool": "search_filings", "args": args})
     citations: dict[int, dict[str, Any]] = {}
     _capture_citations(results, citations)
 
