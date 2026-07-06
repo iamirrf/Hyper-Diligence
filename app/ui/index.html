@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hyper-Diligence</title>
+    <link rel="stylesheet" href="/ui/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <span></span>
+          </div>
+          <div>
+            <h1>Hyper-Diligence</h1>
+            <p>SEC filing research workbench</p>
+          </div>
+        </div>
+        <div class="top-actions">
+          <div class="status-pill" id="status-pill">
+            <span class="pulse" aria-hidden="true"></span>
+            <span id="health-text">Checking corpus</span>
+          </div>
+          <a class="icon-link" href="/docs" target="_blank" rel="noreferrer">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 19.5V5.8c0-.9.7-1.6 1.6-1.6h5.1c.8 0 1.6.3 2.2.9l.1.1.1-.1c.6-.6 1.4-.9 2.2-.9h3.1c.9 0 1.6.7 1.6 1.6v13.7h-4.7c-.8 0-1.6.3-2.2.9l-.1.1-.1-.1c-.6-.6-1.4-.9-2.2-.9H4Z" />
+              <path d="M13 5.2v15.1" />
+            </svg>
+            API docs
+          </a>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="question-band" aria-labelledby="ask-title">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">Analyst prompt</span>
+              <h2 id="ask-title">Ask across the filing corpus</h2>
+            </div>
+            <div class="model-chip">
+              <span>Local models</span>
+              <strong>No OpenAI spend</strong>
+            </div>
+          </div>
+
+          <form id="ask-form" class="ask-form">
+            <label class="sr-only" for="question-input">Question</label>
+            <textarea
+              id="question-input"
+              data-testid="question-input"
+              rows="3"
+              placeholder="Ask about risk factors, revenue drivers, segment changes, credit exposure, supply chain issues..."
+            >What supply chain risks did Apple discuss?</textarea>
+            <div class="prompt-row" aria-label="Example questions">
+              <button type="button" class="sample" data-question="What drove Microsoft Intelligent Cloud revenue growth in 2025?">Microsoft cloud</button>
+              <button type="button" class="sample" data-question="What credit risks does JPMorganChase list?">JPM credit risk</button>
+              <button type="button" class="sample" data-question="What drove NVIDIA Data Center computing revenue growth?">NVIDIA data center</button>
+              <button type="button" class="sample" data-question="What financing arrangements does Tesla offer for vehicles?">Tesla financing</button>
+            </div>
+            <div class="form-footer">
+              <button class="primary-button" data-testid="ask-submit" type="submit">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m5 12 14-7-7 14-2-5-5-2Z" />
+                  <path d="m12 14 7-9" />
+                </svg>
+                Ask
+              </button>
+              <button class="ghost-button" id="clear-answer" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+                Clear
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section class="answer-layout" aria-label="Answer and citations">
+          <article class="answer-panel">
+            <div class="panel-header">
+              <div>
+                <span class="eyebrow">Grounded answer</span>
+                <h2>Response</h2>
+              </div>
+              <span class="count-badge" id="citation-count">0 citations</span>
+            </div>
+            <div class="answer-box" id="answer-output" data-testid="answer-output">
+              <p class="empty-state">Run a question to see a cited answer pulled from the ingested SEC filings.</p>
+            </div>
+          </article>
+
+          <aside class="citation-panel">
+            <div class="panel-header">
+              <div>
+                <span class="eyebrow">Evidence</span>
+                <h2>Citations</h2>
+              </div>
+            </div>
+            <div class="citation-list" id="citation-list">
+              <p class="empty-state compact">Citations will appear here with ticker, form, date, and section.</p>
+            </div>
+          </aside>
+        </section>
+
+        <section class="search-panel" aria-labelledby="search-title">
+          <div class="panel-header">
+            <div>
+              <span class="eyebrow">Retrieval console</span>
+              <h2 id="search-title">Search filing passages</h2>
+            </div>
+            <span class="count-badge" id="result-count">No results yet</span>
+          </div>
+
+          <form id="search-form" class="search-form">
+            <label class="field wide">
+              <span>Query</span>
+              <input id="search-query" data-testid="search-query" type="search" value="Apple supply chain disruption risk" />
+            </label>
+            <label class="field">
+              <span>Ticker</span>
+              <select id="ticker-filter">
+                <option value="">All</option>
+                <option>AAPL</option>
+                <option>MSFT</option>
+                <option>NVDA</option>
+                <option>JPM</option>
+                <option>TSLA</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Form</span>
+              <select id="form-filter">
+                <option value="">All</option>
+                <option>10-K</option>
+                <option>8-K</option>
+              </select>
+            </label>
+            <fieldset class="mode-group">
+              <legend>Mode</legend>
+              <label><input type="radio" name="mode" value="hybrid_rerank" checked /> Hybrid + rerank</label>
+              <label><input type="radio" name="mode" value="hybrid" /> Hybrid</label>
+              <label><input type="radio" name="mode" value="dense" /> Dense</label>
+              <label><input type="radio" name="mode" value="bm25" /> BM25</label>
+            </fieldset>
+            <label class="field range-field">
+              <span>Results <strong id="k-value">5</strong></span>
+              <input id="top-k" type="range" min="1" max="10" value="5" />
+            </label>
+            <button class="secondary-button" data-testid="search-submit" type="submit">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m16.5 16.5 4 4" />
+              </svg>
+              Search
+            </button>
+          </form>
+
+          <div class="results-list" id="results-list">
+            <p class="empty-state compact">Search results will show ranked passages with source metadata and scores.</p>
+          </div>
+        </section>
+
+        <section class="metrics-band" aria-label="Corpus and retrieval metrics">
+          <article class="metric-tile">
+            <span class="eyebrow">Corpus</span>
+            <strong id="chunk-count">-</strong>
+            <span>embedded chunks</span>
+          </article>
+          <article class="metric-tile">
+            <span class="eyebrow">Best mode</span>
+            <strong id="best-mode">-</strong>
+            <span id="best-mode-detail">waiting for evals</span>
+          </article>
+          <article class="eval-table-wrap">
+            <div class="panel-header tight">
+              <div>
+                <span class="eyebrow">Retrieval evals</span>
+                <h2>Recall and MRR</h2>
+              </div>
+              <button class="icon-button" id="refresh-evals" type="button" aria-label="Refresh evals">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M21 12a9 9 0 0 1-15.1 6.6" />
+                  <path d="M3 12A9 9 0 0 1 18.1 5.4" />
+                  <path d="M18 2v4h-4" />
+                  <path d="M6 22v-4h4" />
+                </svg>
+              </button>
+            </div>
+            <div id="evals-table" class="evals-table">
+              <p class="empty-state compact">Loading evals...</p>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="/ui/app.js" defer></script>
+  </body>
+</html>

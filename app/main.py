@@ -1,18 +1,22 @@
 import logging
 from datetime import date
+from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from openai import OpenAIError
 from pydantic import BaseModel, Field
 
 from app.config import MissingConfigurationError
-from app.db import count_chunks
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Hyper-Diligence", version="0.1.0")
+UI_DIR = Path(__file__).parent / "ui"
+app.mount("/ui", StaticFiles(directory=UI_DIR), name="ui")
 
 
 class HealthResponse(BaseModel):
@@ -58,8 +62,16 @@ class EvalResponse(BaseModel):
     modes: dict[str, dict[str, float]]
 
 
+@app.head("/", include_in_schema=False)
+@app.get("/", include_in_schema=False)
+def root() -> FileResponse:
+    return FileResponse(UI_DIR / "index.html")
+
+
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
+    from app.db import count_chunks
+
     return HealthResponse(status="ok", chunks=count_chunks())
 
 

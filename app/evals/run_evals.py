@@ -6,6 +6,7 @@ from typing import Any
 GOLDSET_PATH = Path("app/evals/goldset.jsonl")
 README_PATH = Path("README.md")
 LAST_RESULTS_PATH = Path("data/evals_last.json")
+PACKAGED_RESULTS_PATH = Path(__file__).with_name("results.json")
 MODES = ["dense", "bm25", "hybrid", "hybrid_rerank"]
 
 
@@ -71,6 +72,7 @@ def run_evals() -> dict[str, Any]:
     }
     LAST_RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
     LAST_RESULTS_PATH.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    PACKAGED_RESULTS_PATH.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print(table)
     return payload
 
@@ -87,6 +89,8 @@ def load_goldset() -> list[dict[str, Any]]:
 
 def load_last_results() -> dict[str, Any]:
     if not LAST_RESULTS_PATH.exists():
+        if PACKAGED_RESULTS_PATH.exists():
+            return json.loads(PACKAGED_RESULTS_PATH.read_text(encoding="utf-8"))
         return {"table_markdown": "", "modes": {}}
     return json.loads(LAST_RESULTS_PATH.read_text(encoding="utf-8"))
 

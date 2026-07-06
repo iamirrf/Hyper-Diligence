@@ -45,9 +45,10 @@ A: JPMorganChase cites adverse changes in the financial condition of clients, cu
 3. Initialize the schema: `python -m app.db --init`. Use `python -m app.db --reset` after changing embedding dimensions.
 4. Check credentials: `python -m app.preflight`.
 5. Start the API: `uvicorn app.main:app --reload`.
-6. Ingest the target corpus: `python -m app.ingest.pipeline --tickers AAPL MSFT NVDA JPM TSLA`.
-7. Search: `curl "http://localhost:8000/search?q=Apple%20services%20segment%20growth"`.
-8. Ask: `curl -X POST http://localhost:8000/ask -H "Content-Type: application/json" -d '{"question":"What risks does Apple flag around supply chain concentration?"}'`.
+6. Open the workbench at `http://localhost:8000/`. API docs remain available at `/docs`.
+7. Ingest the target corpus: `python -m app.ingest.pipeline --tickers AAPL MSFT NVDA JPM TSLA`.
+8. Search: `curl "http://localhost:8000/search?q=Apple%20services%20segment%20growth"`.
+9. Ask: `curl -X POST http://localhost:8000/ask -H "Content-Type: application/json" -d '{"question":"What risks does Apple flag around supply chain concentration?"}'`.
 
 ## Live Demo
 
