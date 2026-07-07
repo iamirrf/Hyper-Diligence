@@ -42,7 +42,7 @@ ensure_swap() {
 ensure_docker() {
   if ! command -v docker >/dev/null 2>&1; then
     if command -v dnf >/dev/null 2>&1; then
-      ${SUDO} dnf install -y docker curl
+      ${SUDO} dnf install -y docker
     elif command -v apt-get >/dev/null 2>&1; then
       ${SUDO} apt-get update
       ${SUDO} apt-get install -y docker.io curl
@@ -60,7 +60,7 @@ ensure_docker() {
 
   if ! command -v curl >/dev/null 2>&1; then
     if command -v dnf >/dev/null 2>&1; then
-      ${SUDO} dnf install -y curl
+      ${SUDO} dnf install -y curl-minimal || ${SUDO} dnf install -y curl --allowerasing
     elif command -v apt-get >/dev/null 2>&1; then
       ${SUDO} apt-get update
       ${SUDO} apt-get install -y curl
