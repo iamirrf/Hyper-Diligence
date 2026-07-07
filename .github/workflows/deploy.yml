@@ -37,52 +37,97 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-test
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Write deployment env file
+      - name: Check deploy secrets
+        id: deploy_gate
         env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+        run: |
+          set -euo pipefail
+          missing=()
+          for name in EC2_HOST EC2_USER EC2_SSH_KEY S3_BUCKET; do
+            if [ -z "${!name:-}" ]; then
+              missing+=("${name}")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "ready=false" >> "${GITHUB_OUTPUT}"
+            printf 'CD skipped until these GitHub secrets are set: %s\n' "${missing[*]}"
+            exit 0
+          fi
+
+          echo "ready=true" >> "${GITHUB_OUTPUT}"
+          echo "CD secrets present; deployment will run."
+
+      - name: Deploy over SSH
+        if: steps.deploy_gate.outputs.ready == 'true'
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          REPO_URL: https://github.com/${{ github.repository }}.git
           S3_BUCKET: ${{ secrets.S3_BUCKET }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           EDGAR_USER_AGENT: ${{ secrets.EDGAR_USER_AGENT }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-        run: |
-          set -euo pipefail
-          if [ -z "${S3_BUCKET}" ]; then
-            echo "::error::S3_BUCKET GitHub secret is required"
-            exit 1
-          fi
-          {
-            echo "POSTGRES_USER=${POSTGRES_USER:-hyper_diligence}"
-            echo "POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-hyper_diligence}"
-            echo "POSTGRES_DB=${POSTGRES_DB:-hyper_diligence}"
-            echo "EMBEDDING_PROVIDER=local"
-            echo "EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2"
-            echo "EMBEDDING_DIMENSIONS=384"
-            echo "CHAT_PROVIDER=extractive"
-            echo "AWS_REGION=${AWS_REGION:-us-east-1}"
-            echo "S3_BUCKET=${S3_BUCKET}"
-            echo "S3_ENABLED=true"
-            echo "EDGAR_USER_AGENT=\"${EDGAR_USER_AGENT:-Hyper-Diligence research amirhosseinaref@outlook.com}\""
-          } > .env
-
-      - name: Copy release bundle to EC2
-        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "app,Dockerfile,docker-compose.yml,requirements.txt,scripts,.env"
-          target: "~/hyper-diligence"
-          rm: true
-
-      - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: REPO_URL,S3_BUCKET,AWS_REGION,EDGAR_USER_AGENT,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB
           script: |
+            set -euo pipefail
+
+            SUDO=""
+            if [ "$(id -u)" -ne 0 ]; then
+              SUDO="sudo"
+            fi
+
+            if ! command -v git >/dev/null 2>&1; then
+              if command -v dnf >/dev/null 2>&1; then
+                ${SUDO} dnf install -y git
+              elif command -v apt-get >/dev/null 2>&1; then
+                ${SUDO} apt-get update
+                ${SUDO} apt-get install -y git
+              else
+                echo "Unsupported Linux distro: install git manually" >&2
+                exit 1
+              fi
+            fi
+
+            APP_DIR="${HOME}/hyper-diligence"
+            if [ -d "${APP_DIR}/.git" ]; then
+              cd "${APP_DIR}"
+              git fetch origin main
+              git checkout main
+              git pull --ff-only origin main
+            else
+              git clone --branch main "${REPO_URL}" "${APP_DIR}"
+              cd "${APP_DIR}"
+            fi
+
+            write_env() {
+              key="$1"
+              value="$2"
+              value="${value//\'/\'\\\'\'}"
+              printf "%s='%s'\n" "${key}" "${value}" >> .env
+            }
+
+            : > .env
+            write_env POSTGRES_USER "${POSTGRES_USER:-hyper_diligence}"
+            write_env POSTGRES_PASSWORD "${POSTGRES_PASSWORD:-hyper_diligence}"
+            write_env POSTGRES_DB "${POSTGRES_DB:-hyper_diligence}"
+            write_env EMBEDDING_PROVIDER "local"
+            write_env EMBEDDING_MODEL "sentence-transformers/all-MiniLM-L6-v2"
+            write_env EMBEDDING_DIMENSIONS "384"
+            write_env CHAT_PROVIDER "extractive"
+            write_env AWS_REGION "${AWS_REGION:-us-east-1}"
+            write_env S3_BUCKET "${S3_BUCKET}"
+            write_env S3_ENABLED "true"
+            write_env EDGAR_USER_AGENT "${EDGAR_USER_AGENT:-Hyper-Diligence SEC research set EDGAR_USER_AGENT secret}"
+
             cd ~/hyper-diligence
             bash scripts/deploy_ec2.sh

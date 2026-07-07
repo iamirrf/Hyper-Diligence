@@ -1,5 +1,14 @@
 .env
+.env.local
+.env.*.local
 *.pem
+*.ppk
+*.key
+*.p12
+id_rsa
+id_ed25519
+secrets/
+secrets.*
 __pycache__/
 *.py[cod]
 *.pyo

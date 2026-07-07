@@ -10,7 +10,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hyper_diligence -d hyper_diligence"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-hyper_diligence} -d $${POSTGRES_DB:-hyper_diligence}"]
       interval: 5s
       timeout: 5s
       retries: 10

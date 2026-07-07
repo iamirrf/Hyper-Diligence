@@ -52,8 +52,8 @@ A: JPMorganChase cites adverse changes in the financial condition of clients, cu
 
 ## Live Demo
 
-Pending: add the EC2 Elastic IP or domain after deployment.
+TODO_LIVE_DEMO_URL: replace with `http://<EC2_ELASTIC_IP>/` after the EC2 deployment is verified.
 
 ## AWS Deployment
 
-The deploy workflow targets a free-tier-sized EC2 `t3.micro` with Docker Compose. Configure GitHub Actions secrets `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, and `S3_BUCKET`; optionally set `AWS_REGION`, `EDGAR_USER_AGENT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`. The instance should use an IAM role with least-privilege access to the filings S3 bucket; do not store AWS access keys in the repository or workflow.
+The deploy workflow targets a free-tier-sized EC2 `t3.micro` with Docker Compose. Configure GitHub Actions secrets `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, and `S3_BUCKET`; optionally set `AWS_REGION`, `EDGAR_USER_AGENT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`. The deploy job skips cleanly until the required secrets exist, so CI can stay green before the EC2 instance is ready. The instance should use an IAM role with least-privilege access to the filings S3 bucket; do not store AWS access keys in the repository or workflow.
