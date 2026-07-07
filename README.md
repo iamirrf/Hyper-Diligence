@@ -52,7 +52,7 @@ A: JPMorganChase cites adverse changes in the financial condition of clients, cu
 
 ## Live Demo
 
-TODO_LIVE_DEMO_URL: replace with `http://<EC2_ELASTIC_IP>/` after the EC2 deployment is verified.
+Live demo: http://3.144.102.207/
 
 ## AWS Deployment
 
