@@ -104,6 +104,18 @@ except Exception:
 PY
 }
 
+wait_for_app() {
+  for _ in $(seq 1 60); do
+    if curl --fail --silent --show-error http://127.0.0.1/health; then
+      return
+    fi
+    sleep 2
+  done
+  echo "App did not become healthy" >&2
+  compose logs app >&2 || true
+  exit 1
+}
+
 ensure_swap
 ensure_docker
 
@@ -119,4 +131,4 @@ if [ -z "${chunks}" ] || [ "${chunks}" = "0" ]; then
 fi
 
 compose up -d app
-curl --fail --silent --show-error http://127.0.0.1/health
+wait_for_app
