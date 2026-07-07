@@ -27,6 +27,7 @@ jobs:
       - name: Run tests
         env:
           PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+          PYTHONPATH: ${{ github.workspace }}
         run: pytest -q
 
       - name: Build Docker image
