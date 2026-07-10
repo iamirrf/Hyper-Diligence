@@ -22,10 +22,10 @@ flowchart LR
 <!-- EVALS_START -->
 | Mode | Recall@5 | Recall@10 | MRR |
 |---|---:|---:|---:|
-| dense | 0.900 | 0.900 | 0.703 |
-| bm25 | 0.700 | 0.900 | 0.462 |
-| hybrid | 0.800 | 0.900 | 0.700 |
-| hybrid_rerank | 1.000 | 1.000 | 0.770 |
+| dense | 0.900 | 0.900 | 0.783 |
+| bm25 | 0.800 | 1.000 | 0.497 |
+| hybrid | 0.900 | 1.000 | 0.746 |
+| hybrid_rerank | 1.000 | 1.000 | 0.900 |
 <!-- EVALS_END -->
 
 ## Example Q&A
@@ -52,8 +52,8 @@ A: JPMorganChase cites adverse changes in the financial condition of clients, cu
 
 ## Live Demo
 
-Live demo: http://3.150.20.122/
+Live demo: http://3.150.13.24/
 
 ## AWS Deployment
 
-The deploy workflow targets a free-tier-sized EC2 `t3.micro` with Docker Compose. Configure GitHub Actions secrets `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, and `S3_BUCKET`; optionally set `AWS_REGION`, `EDGAR_USER_AGENT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`. The deploy job skips cleanly until the required secrets exist, so CI can stay green before the EC2 instance is ready. The instance should use an IAM role with least-privilege access to the filings S3 bucket; do not store AWS access keys in the repository or workflow.
+The deploy workflow targets a free-tier-sized EC2 `t3.micro` with Docker Compose. The public demo must use an Elastic IP, not the instance's ephemeral public IP. Allocate or reuse the address with `AWS_REGION=us-east-1 EC2_INSTANCE_ID=<instance-id> scripts/ensure_elastic_ip.sh`, then set GitHub Actions secrets `EC2_HOST` to the printed public IP and `EC2_EIP_ALLOCATION_ID` to the printed allocation ID. Also configure `EC2_USER`, `EC2_SSH_KEY`, and `S3_BUCKET`; optionally set `AWS_REGION`, `EDGAR_USER_AGENT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`. The deploy job skips cleanly until the required secrets exist, and it fails if `EC2_HOST` is the known stale ephemeral IP `3.144.102.207`. The instance should use an IAM role with least-privilege access to the filings S3 bucket; do not store AWS access keys in the repository or workflow.
