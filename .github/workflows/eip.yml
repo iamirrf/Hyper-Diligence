@@ -1,0 +1,45 @@
+name: Setup EIP
+on:
+  workflow_dispatch:
+
+jobs:
+  allocate-eip:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Run EIP script
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            nohup bash -c '
+              exec > /tmp/eip_run.log 2>&1
+              AWS_REGION="us-east-1"
+              EIP_TAG_NAME="Hyper-Diligence-live"
+              PROJECT_TAG="Hyper-Diligence"
+              TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 60")
+              INSTANCE_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+              
+              ALLOCATION_ID=$(aws ec2 describe-addresses --region "$AWS_REGION" --filters "Name=tag:Name,Values=$EIP_TAG_NAME" "Name=tag:Project,Values=$PROJECT_TAG" --query "Addresses[0].AllocationId" --output text)
+              
+              if [ "$ALLOCATION_ID" = "None" ] || [ -z "$ALLOCATION_ID" ]; then
+                ALLOCATION_ID=$(aws ec2 allocate-address --region "$AWS_REGION" --domain vpc --tag-specifications "ResourceType=elastic-ip,Tags=[{Key=Name,Value=$EIP_TAG_NAME},{Key=Project,Value=$PROJECT_TAG}]" --query AllocationId --output text)
+              fi
+              
+              PUBLIC_IP=$(aws ec2 describe-addresses --region "$AWS_REGION" --allocation-ids "$ALLOCATION_ID" --query "Addresses[0].PublicIp" --output text)
+              
+              # Push the IP to a free pastebin or something? No, just use GitHub API to create an issue!
+              curl -L \
+                -X POST \
+                -H "Accept: application/vnd.github+json" \
+                -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                https://api.github.com/repos/${{ github.repository }}/issues \
+                -d "{\"title\":\"New Elastic IP Allocated\",\"body\":\"The new Elastic IP is $PUBLIC_IP\"}"
+              
+              aws ec2 associate-address --region "$AWS_REGION" --allocation-id "$ALLOCATION_ID" --instance-id "$INSTANCE_ID" --allow-reassociation
+            ' &
+            sleep 2
